@@ -59,17 +59,20 @@ static inline Elf32_Half ElfHalfEndianAdjust(Elf32_Half val)
 
 static inline Elf32_Word ElfWordEndianAdjust(Elf32_Word val)
 {
-    return ((val >> 16) & 0xFF) | ((val >> 8) & 0xFF) | ((val << 8) & 0xFF) | ((val << 8) & 0xFF);
+    return val >> 24 | (val >> 8 & 0xff00) | (val << 8 & 0xff0000) | val << 24; 
+    // return ((val >> 16) & 0xFF) | ((val >> 8) & 0xFF) | ((val << 8) & 0xFF) | ((val << 8) & 0xFF);
 }
 
 static inline Elf32_Addr ElfAddrEndianAdjust(Elf32_Addr val)
 {
-    return ((val >> 16) & 0xFF) | ((val >> 8) & 0xFF) | ((val << 8) & 0xFF) | ((val << 8) & 0xFF);
+    return val >> 24 | (val >> 8 & 0xff00) | (val << 8 & 0xff0000) | val << 24;
+     //return ((val >> 16) & 0xFF) | ((val >> 8) & 0xFF) | ((val << 8) & 0xFF) | ((val << 8) & 0xFF);
 }
 
 static inline Elf32_Off ElfOffEndianAdjust(Elf32_Off val)
 {
-    return ((val >> 16) & 0xFF) | ((val >> 8) & 0xFF) | ((val << 8) & 0xFF) | ((val << 8) & 0xFF);
+    return val >> 24 | (val >> 8 & 0xff00) | (val << 8 & 0xff0000) | val << 24;
+    // return ((val >> 16) & 0xFF) | ((val >> 8) & 0xFF) | ((val << 8) & 0xFF) | ((val << 8) & 0xFF);
 }
 
 void endianAdjustEhdr(Elf32_Ehdr &ehdr)
@@ -84,7 +87,7 @@ void endianAdjustEhdr(Elf32_Ehdr &ehdr)
 void endianAdjustShdr(Elf32_Shdr &shdr)
 {
     shdr.sh_name = ElfWordEndianAdjust(shdr.sh_name);
-    shdr.sh_size = ElfHalfEndianAdjust(shdr.sh_size);
+    shdr.sh_size = ElfWordEndianAdjust(shdr.sh_size);
     shdr.sh_offset = ElfOffEndianAdjust(shdr.sh_offset);
 }
 
@@ -138,16 +141,20 @@ void analyze(string basedir, string version) {
         {
             endianAdjustShdr(shdr_entry);
         }
+        
+        //std::cout << ehdr.e_shnum <<'\n';
+        //std::cout << ehdr.e_shstrndx <<'\n';
+        
         // Read .shstrtab
-        printf("shstrsz: %ld\n", shstrsz);
-        printf("sh_size: %d\n", shdr[ehdr.e_shstrndx].sh_size);
+        //printf("shstrsz: %ld\n", shstrsz);
+        //printf("sh_size: %d\n", shdr[ehdr.e_shstrndx].sh_size);
         if (shstrsz < shdr[ehdr.e_shstrndx].sh_size) {
             shstrtab = (char *)realloc(shstrtab, shdr[ehdr.e_shstrndx].sh_size);
             shstrsz = shdr[ehdr.e_shstrndx].sh_size;
         }
         elf.seekg(shdr[ehdr.e_shstrndx].sh_offset);
         elf.read(shstrtab, shdr[ehdr.e_shstrndx].sh_size);
-        printf("shstrtab + hdr[0].sh_name: %s\n", shstrtab + shdr[0].sh_name);
+        //printf("shstrtab + hdr[0].sh_name: %s\n", shstrtab + shdr[0].sh_name);
         elf.close();
 
         // Analyze sections
